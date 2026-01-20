@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Обработка на рамката - Премахване на фон</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .preview-section {
+            margin: 30px 0;
+            text-align: center;
+        }
+
+        .canvas-container {
+            display: inline-block;
+            border: 3px solid #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            background: 
+                linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
+                linear-gradient(-45deg, #f0f0f0 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #f0f0f0 75%),
+                linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        #previewCanvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+
+        button {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            margin: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(17, 153, 142, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .loading {
+            text-align: center;
+            color: #666;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .info {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Обработка на рамката</h1>
+        <p class="subtitle">Автоматично премахване на белия фон от рамката</p>
+
+        <div class="info">
+            <strong>Как работи:</strong><br>
+            1. Рамката се зарежда автоматично<br>
+            2. Белият фон извън зелената рамка се премахва<br>
+            3. Белият фон във вътрешния кръг се премахва<br>
+            4. Белият цвят в знамето и надписа се запазва<br>
+            5. Изтеглете обработената рамка с прозрачен фон
+        </div>
+
+        <div class="loading" id="loading">Обработване на рамката...</div>
+
+        <div class="preview-section">
+            <div class="canvas-container">
+                <canvas id="previewCanvas"></canvas>
+            </div>
+        </div>
+
+        <div style="text-align: center;">
+            <button id="downloadBtn" disabled>
+                ⬇️ Изтегли рамката с прозрачен фон
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const previewCanvas = document.getElementById('previewCanvas');
+        const ctx = previewCanvas.getContext('2d');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const loading = document.getElementById('loading');
+
+        let processedImage = null;
+
+        // Функция за премахване на белия фон от рамката
+        function removeWhiteBackground(image, callback) {
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = image.width;
+            tempCanvas.height = image.height;
+            
+            tempCtx.drawImage(image, 0, 0);
+            
+            const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+            const data = imageData.data;
+            const width = tempCanvas.width;
+            const height = tempCanvas.height;
+            
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const innerRadius = Math.min(width, height) * 0.38; // Вътрешен кръг
+            const frameRadius = Math.min(width, height) * 0.48; // Зелена рамка
+            
+            // Функция за проверка дали пикселът е бял
+            function isWhite(x, y) {
+                if (x < 0 || x >= width || y < 0 || y >= height) return false;
+                const idx = (Math.floor(y) * width + Math.floor(x)) * 4;
+                const r = data[idx];
+                const g = data[idx + 1];
+                const b = data[idx + 2];
+                const a = data[idx + 3];
+                return a > 0 && r >= 248 && g >= 248 && b >= 248;
+            }
+            
+            // Функция за проверка дали пикселът е във вътрешния кръг
+            function isInInnerCircle(x, y) {
+                const dx = x - centerX;
+                const dy = y - centerY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                return dist <= innerRadius;
+            }
+            
+            // Функция за проверка дали пикселът е извън зелената рамка
+            function isOutsideFrame(x, y) {
+                const dx = x - centerX;
+                const dy = y - centerY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                return dist > frameRadius;
+            }
+            
+            // Функция за проверка дали пикселът е част от знамето
+            function isPartOfFlag(x, y) {
+                for (let dy = -20; dy <= 20; dy++) {
+                    for (let dx = -20; dx <= 20; dx++) {
+                        const nx = x + dx;
+                        const ny = y + dy;
+                        if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                            const idx = (ny * width + nx) * 4;
+                            const r = data[idx];
+                            const g = data[idx + 1];
+                            const b = data[idx + 2];
+                            const a = data[idx + 3];
+                            
+                            if (a === 0) continue;
+                            
+                            const isGreen = g > r + 20 && g > b + 20 && g < 250;
+                            const isRed = r > g + 20 && r > b + 20 && r < 250;
+                            
+                            if (isGreen || isRed) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+            
+            // Функция за проверка дали пикселът е близо до надписа или знамето
+            function isNearTextOrFlag(x, y) {
+                const isInBottomArea = y > height * 0.65;
+                if (isInBottomArea) {
+                    const isNearFlag = x > width * 0.60;
+                    const isNearText = x > width * 0.20 && x < width * 0.80;
+                    return isNearFlag || isNearText;
+                }
+                return false;
+            }
+            
+            // Преминаваме през всички пиксели
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const idx = (y * width + x) * 4;
+                    const a = data[idx + 3];
+                    
+                    if (a === 0) continue;
+                    
+                    // Премахваме белия фон извън зелената рамка
+                    if (isWhite(x, y) && isOutsideFrame(x, y)) {
+                        data[idx + 3] = 0;
+                        continue;
+                    }
+                    
+                    // Премахваме белия фон във вътрешния кръг, но запазваме знамето и надписа
+                    if (isWhite(x, y) && isInInnerCircle(x, y) && !isPartOfFlag(x, y) && !isNearTextOrFlag(x, y)) {
+                        data[idx + 3] = 0;
+                    }
+                }
+            }
+            
+            tempCtx.putImageData(imageData, 0, 0);
+            
+            const processedImage = new Image();
+            processedImage.onload = function() {
+                callback(processedImage);
+            };
+            processedImage.src = tempCanvas.toDataURL('image/png');
+        }
+
+        // Зареждане на рамката
+        function loadFrame() {
+            loading.classList.add('active');
+            const frame = new Image();
+            frame.crossOrigin = 'anonymous';
+            
+            const paths = [
+                'podkrepa_za_radev_frame_fb.png',
+                '/podkrepa_za_radev_frame_fb.png',
+                './podkrepa_za_radev_frame_fb.png'
+            ];
+            let currentPathIndex = 0;
+            
+            frame.onload = function() {
+                console.log('Рамката е заредена успешно! Размери:', frame.width, 'x', frame.height);
+                
+                // Обработваме рамката
+                removeWhiteBackground(frame, function(processed) {
+                    processedImage = processed;
+                    console.log('Рамката е обработена успешно!');
+                    
+                    // Показваме резултата
+                    previewCanvas.width = processed.width;
+                    previewCanvas.height = processed.height;
+                    ctx.drawImage(processed, 0, 0);
+                    
+                    loading.classList.remove('active');
+                    downloadBtn.disabled = false;
+                });
+            };
+            
+            frame.onerror = function() {
+                console.error('Грешка при зареждане на рамката от:', paths[currentPathIndex - 1]);
+                if (currentPathIndex < paths.length) {
+                    frame.src = paths[currentPathIndex++];
+                } else {
+                    loading.classList.remove('active');
+                    alert('Грешка при зареждане на рамката. Моля, проверете дали файлът podkrepa_za_radev_frame_fb.png е в същата папка.');
+                }
+            };
+            
+            frame.src = paths[currentPathIndex++];
+        }
+
+        // Изтегляне на обработената рамка
+        downloadBtn.addEventListener('click', function() {
+            if (!processedImage) return;
+            
+            const link = document.createElement('a');
+            link.download = 'podkrepa_za_radev_frame_fb_transparent.png';
+            link.href = previewCanvas.toDataURL('image/png');
+            link.click();
+        });
+
+        // Зареждане на рамката при стартиране
+        loadFrame();
+    </script>
+</body>
+</html>

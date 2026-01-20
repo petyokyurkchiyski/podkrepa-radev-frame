@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Подкрепа за Румен Радев - Генератор на профилни снимки</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0d4f3c 0%, #1a7a5e 50%, #0d4f3c 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #0d4f3c;
+        }
+
+        h1 {
+            color: #0d4f3c;
+            margin-bottom: 10px;
+            font-size: 32px;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .subtitle {
+            color: #1a7a5e;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .brand-text {
+            color: #d32f2f;
+            font-size: 18px;
+            font-weight: 700;
+            margin-top: 5px;
+        }
+
+        .upload-section {
+            margin-bottom: 30px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            z-index: 10;
+            top: 0;
+            left: 0;
+        }
+
+        .file-input-label {
+            display: block;
+            padding: 20px;
+            background: linear-gradient(135deg, #0d4f3c 0%, #1a7a5e 100%);
+            color: white;
+            text-align: center;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-size: 16px;
+            font-weight: 600;
+            border: 2px solid #0d4f3c;
+        }
+
+        .file-input-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(13, 79, 60, 0.4);
+            background: linear-gradient(135deg, #1a7a5e 0%, #0d4f3c 100%);
+        }
+
+        .file-input-label:active {
+            transform: translateY(0);
+        }
+
+        .controls {
+            margin: 20px 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .control-group label {
+            margin-bottom: 8px;
+            color: #0d4f3c;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .control-group input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            outline: none;
+        }
+        
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #0d4f3c;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        .control-group input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #0d4f3c;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+
+        .preview-section {
+            margin: 30px 0;
+            text-align: center;
+        }
+
+        .canvas-container {
+            display: inline-block;
+            border: 3px solid #0d4f3c;
+            border-radius: 10px;
+            overflow: hidden;
+            background: 
+                linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
+                linear-gradient(-45deg, #f0f0f0 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #f0f0f0 75%),
+                linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            box-shadow: 0 5px 15px rgba(13, 79, 60, 0.3);
+        }
+
+        #previewCanvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            background: #f0f0f0;
+            min-width: 300px;
+            min-height: 300px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+        }
+
+        .btn-download {
+            background: linear-gradient(135deg, #0d4f3c 0%, #1a7a5e 100%);
+            border: 2px solid #0d4f3c;
+        }
+
+        .btn-download:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(13, 79, 60, 0.4);
+            background: linear-gradient(135deg, #1a7a5e 0%, #0d4f3c 100%);
+        }
+
+        .btn-reset {
+            background: linear-gradient(135deg, #d32f2f 0%, #f44336 100%);
+            border: 2px solid #d32f2f;
+        }
+
+        .btn-reset:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(211, 47, 47, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .loading {
+            text-align: center;
+            color: #666;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            .controls {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🇧🇬 Подкрепа за Румен Радев</h1>
+            <p class="subtitle">Генератор на профилни снимки с рамка</p>
+            <p class="brand-text">Покажете подкрепата си с рамка на българските цветове</p>
+        </div>
+
+        <div class="upload-section">
+            <div class="file-input-wrapper">
+                <input type="file" id="photoInput" class="file-input" accept="image/*">
+                <label for="photoInput" class="file-input-label">
+                    📷 Изберете вашата снимка
+                </label>
+            </div>
+        </div>
+
+        <div class="controls" id="controls" style="display: none;">
+            <div class="control-group">
+                <label for="sizeSlider">Размер: <span id="sizeValue">100%</span></label>
+                <input type="range" id="sizeSlider" min="30" max="120" value="100">
+            </div>
+            <div class="control-group">
+                <label for="positionXSlider">Позиция X: <span id="positionXValue">0</span></label>
+                <input type="range" id="positionXSlider" min="-100" max="100" value="0">
+            </div>
+            <div class="control-group">
+                <label for="positionYSlider">Позиция Y: <span id="positionYValue">0</span></label>
+                <input type="range" id="positionYSlider" min="-100" max="100" value="0">
+            </div>
+            <div class="control-group">
+                <label for="opacitySlider">Прозрачност: <span id="opacityValue">100%</span></label>
+                <input type="range" id="opacitySlider" min="0" max="100" value="100">
+            </div>
+        </div>
+
+        <div class="loading" id="loading">Зареждане...</div>
+
+        <div class="preview-section">
+            <div class="canvas-container">
+                <canvas id="previewCanvas"></canvas>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button id="downloadBtn" class="btn-download" disabled>
+                ⬇️ Изтегли снимката
+            </button>
+            <button id="resetBtn" class="btn-reset" disabled>
+                🔄 Нова снимка
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function initializeApp() {
+        const photoInput = document.getElementById('photoInput');
+        const previewCanvas = document.getElementById('previewCanvas');
+        
+        if (!photoInput) {
+            console.error('photoInput не е намерен!');
+            return;
+        }
+        if (!previewCanvas) {
+            console.error('previewCanvas не е намерен!');
+            return;
+        }
+        
+        const ctx = previewCanvas.getContext('2d');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const controls = document.getElementById('controls');
+        const loading = document.getElementById('loading');
+
+        const sizeSlider = document.getElementById('sizeSlider');
+        const positionXSlider = document.getElementById('positionXSlider');
+        const positionYSlider = document.getElementById('positionYSlider');
+        const opacitySlider = document.getElementById('opacitySlider');
+
+        const sizeValue = document.getElementById('sizeValue');
+        const positionXValue = document.getElementById('positionXValue');
+        const positionYValue = document.getElementById('positionYValue');
+        const opacityValue = document.getElementById('opacityValue');
+
+        let frameImage = null;
+        let processedFrameImage = null;
+        let userImage = null;
+        let currentSettings = {
+            size: 100,
+            positionX: 0,
+            positionY: 0,
+            opacity: 100
+        };
+
+        // Функция за премахване на белия фон само във вътрешния кръг
+        function removeWhiteBackground(image, callback) {
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = image.width;
+            tempCanvas.height = image.height;
+            
+            tempCtx.drawImage(image, 0, 0);
+            
+            const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+            const data = imageData.data;
+            const width = tempCanvas.width;
+            const height = tempCanvas.height;
+            
+            // Изчисляваме центъра и радиуса на вътрешния кръг (където е снимката)
+            const centerX = width / 2;
+            const centerY = height / 2;
+            // Радиусът на вътрешния кръг е приблизително 38% от размера
+            // Намаляваме радиуса за да не засягаме надписа и знамето
+            const innerRadius = Math.min(width, height) * 0.38;
+            
+            // Функция за проверка дали пикселът е бял
+            function isWhite(x, y) {
+                if (x < 0 || x >= width || y < 0 || y >= height) return false;
+                const idx = (Math.floor(y) * width + Math.floor(x)) * 4;
+                const r = data[idx];
+                const g = data[idx + 1];
+                const b = data[idx + 2];
+                const a = data[idx + 3];
+                return a > 0 && r >= 248 && g >= 248 && b >= 248;
+            }
+            
+            // Функция за проверка дали пикселът е във вътрешния кръг (централната област)
+            function isInInnerCircle(x, y) {
+                const dx = x - centerX;
+                const dy = y - centerY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                // Използваме по-малък радиус за да не засягаме надписа и знамето
+                return dist <= innerRadius;
+            }
+            
+            // Функция за проверка дали пикселът е част от знамето (има цветни съседи - зелено/червено)
+            function isPartOfFlag(x, y) {
+                // Проверяваме в радиус 20 пиксела за цветове от знамето
+                for (let dy = -20; dy <= 20; dy++) {
+                    for (let dx = -20; dx <= 20; dx++) {
+                        const nx = x + dx;
+                        const ny = y + dy;
+                        if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                            const idx = (ny * width + nx) * 4;
+                            const r = data[idx];
+                            const g = data[idx + 1];
+                            const b = data[idx + 2];
+                            const a = data[idx + 3];
+                            
+                            if (a === 0) continue;
+                            
+                            // Проверяваме за зелено или червено (цветовете на знамето)
+                            const isGreen = g > r + 20 && g > b + 20 && g < 250;
+                            const isRed = r > g + 20 && r > b + 20 && r < 250;
+                            
+                            if (isGreen || isRed) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+            
+            // Функция за проверка дали пикселът е близо до надписа или знамето
+            function isNearTextOrFlag(x, y) {
+                // Надписът и знамето са в долната част на рамката
+                // Проверяваме дали пикселът е в долната част (под 65% от височината)
+                const isInBottomArea = y > height * 0.65;
+                
+                // Ако е в долната част, проверяваме дали е близо до знамето (дясната част)
+                // или до надписа (централната част)
+                if (isInBottomArea) {
+                    // Знамето е в дясната част
+                    const isNearFlag = x > width * 0.60;
+                    // Надписът е в централната част
+                    const isNearText = x > width * 0.20 && x < width * 0.80;
+                    return isNearFlag || isNearText;
+                }
+                return false;
+            }
+            
+            // Изчисляваме радиуса на зелената рамка (външния кръг)
+            const frameRadius = Math.min(width, height) * 0.48; // Приблизителен радиус на зелената рамка
+            
+            // Функция за проверка дали пикселът е извън зелената рамка (външна част)
+            function isOutsideFrame(x, y) {
+                const dx = x - centerX;
+                const dy = y - centerY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                return dist > frameRadius;
+            }
+            
+            // Преминаваме през всички пиксели
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const idx = (y * width + x) * 4;
+                    const a = data[idx + 3];
+                    
+                    if (a === 0) continue; // Вече прозрачен
+                    
+                    // Първо: Премахваме белия/сив фон извън зелената рамка (външната част)
+                    if (isWhite(x, y) && isOutsideFrame(x, y)) {
+                        data[idx + 3] = 0; // Правим прозрачен
+                        continue;
+                    }
+                    
+                    // Второ: Премахваме белия фон във вътрешния кръг (централната област)
+                    // но запазваме белия цвят в знамето и надписа
+                    if (isWhite(x, y) && isInInnerCircle(x, y) && !isPartOfFlag(x, y) && !isNearTextOrFlag(x, y)) {
+                        data[idx + 3] = 0; // Правим прозрачен
+                    }
+                    // Запазваме белия цвят в знамето и надписа
+                }
+            }
+            
+            tempCtx.putImageData(imageData, 0, 0);
+            
+            const processedImage = new Image();
+            processedImage.onload = function() {
+                callback(processedImage);
+            };
+            processedImage.src = tempCanvas.toDataURL('image/png');
+        }
+
+        // Зареждане на рамката
+        function loadFrame() {
+            const frame = new Image();
+            frame.crossOrigin = 'anonymous';
+            
+            const paths = [
+                'liftapp.png',
+                '/liftapp.png',
+                './liftapp.png'
+            ];
+            let currentPathIndex = 0;
+            
+            frame.onload = function() {
+                frameImage = frame;
+                processedFrameImage = frame; // Файлът вече няма фон, използваме го директно
+                console.log('Рамката е заредена успешно! Размери:', frame.width, 'x', frame.height);
+                // Показваме рамката веднага, дори без снимка
+                render();
+                // Ако има заредена снимка, рендерираме отново
+                if (userImage) {
+                    console.log('Рендериране с заредена снимка...');
+                    render();
+                } else {
+                    console.log('Рамката е видима. Очакване на снимка от потребителя...');
+                }
+            };
+            
+            frame.onerror = function() {
+                console.error('Грешка при зареждане на рамката от:', paths[currentPathIndex - 1]);
+                if (currentPathIndex < paths.length) {
+                    frame.src = paths[currentPathIndex++];
+                } else {
+                    alert('Грешка при зареждане на рамката. Моля, проверете дали файлът liftapp.png е в същата папка.');
+                }
+            };
+            
+            // Започваме с първия път
+            frame.src = paths[currentPathIndex++];
+        }
+
+        // Зареждане на снимката на потребителя
+        photoInput.addEventListener('change', function(e) {
+            console.log('File input променен');
+            const file = e.target.files[0];
+            if (!file) {
+                console.log('Няма избран файл');
+                return;
+            }
+
+            console.log('Файл избран:', file.name, 'Тип:', file.type, 'Размер:', file.size);
+            
+            // Проверяваме дали е изображение
+            if (!file.type.startsWith('image/')) {
+                alert('Моля, изберете изображение!');
+                return;
+            }
+
+            loading.classList.add('active');
+            loading.textContent = 'Зареждане на снимката...';
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                console.log('Файлът е прочетен успешно');
+                const img = new Image();
+                img.onload = function() {
+                    userImage = img;
+                    console.log('Снимката на потребителя е заредена успешно! Размери:', img.width, 'x', img.height);
+                    loading.classList.remove('active');
+                    controls.style.display = 'grid';
+                    downloadBtn.disabled = false;
+                    resetBtn.disabled = false;
+                    // Извикваме render() след малко за да се уверя, че всичко е заредено
+                    setTimeout(function() {
+                        console.log('Опит за рендериране...');
+                        render();
+                    }, 100);
+                };
+                img.onerror = function(error) {
+                    console.error('Грешка при зареждане на изображението:', error);
+                    loading.classList.remove('active');
+                    alert('Грешка при зареждане на снимката. Моля, опитайте с друга снимка.');
+                };
+                console.log('Зареждане на изображение от data URL...');
+                img.src = event.target.result;
+            };
+            reader.onerror = function(error) {
+                console.error('Грешка при четене на файла:', error);
+                loading.classList.remove('active');
+                alert('Грешка при четене на файла. Моля, опитайте отново.');
+            };
+            reader.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    const percentLoaded = Math.round((e.loaded / e.total) * 100);
+                    loading.textContent = 'Зареждане: ' + percentLoaded + '%';
+                }
+            };
+            console.log('Започване на четене на файла...');
+            reader.readAsDataURL(file);
+        });
+        
+        // Добавяме и click event за по-добра диагностика
+        photoInput.addEventListener('click', function() {
+            console.log('File input кликнат');
+        });
+
+        // Рендериране на финалната снимка
+        function render() {
+            // Използваме обработената рамка ако е налична, иначе оригиналната
+            let frameToUse = processedFrameImage;
+            if (!frameToUse) {
+                frameToUse = frameImage;
+            }
+            
+            if (!frameToUse) {
+                console.log('Няма заредена рамка');
+                return;
+            }
+            
+            // Ако няма снимка на потребителя, показваме само рамката
+            if (!userImage) {
+                const size = Math.max(frameToUse.width, frameToUse.height);
+                previewCanvas.width = size;
+                previewCanvas.height = size;
+                ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+                
+                // Рисуваме рамката центрирана
+                const frameX = (previewCanvas.width - frameToUse.width) / 2;
+                const frameY = (previewCanvas.height - frameToUse.height) / 2;
+                ctx.drawImage(frameToUse, frameX, frameY);
+                return;
+            }
+            
+            console.log('Рендериране на снимката с рамка...');
+
+            // Задаваме размерите на canvas според рамката (квадратна за Facebook профилна снимка)
+            const size = Math.max(frameToUse.width, frameToUse.height);
+            previewCanvas.width = size;
+            previewCanvas.height = size;
+            
+            console.log('Canvas размери зададени:', size, 'x', size);
+
+            // Изчистваме canvas с прозрачен фон
+            ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+
+            // Изчисляваме центъра и радиуса на кръга (базирано на рамката)
+            const centerX = previewCanvas.width / 2;
+            const centerY = previewCanvas.height / 2;
+            // Радиусът е фиксиран - размерът на вътрешния кръг (където е снимката)
+            // Леко увеличаваме радиуса, за да намалим бялото поле от вътрешната страна на рамката
+            const radius = Math.min(centerX, centerY) * 0.42;
+
+            // Създаваме кръгла маска за снимката (Facebook профилна снимка е кръгла)
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.clip();
+
+            // Изчисляваме размерите на снимката, за да се побере в кръга без да се изрязват лицата
+            // Използваме "contain" логика - снимката се намалява, за да се побере в кръга
+            const userAspect = userImage.width / userImage.height;
+            const circleDiameter = radius * 2; // Диаметър на кръга
+            
+            let userWidth, userHeight;
+            // Размерът се контролира от слайдъра (30-120%)
+            const sizeMultiplier = currentSettings.size / 100;
+            
+            // Изчисляваме максималните размери, за да снимката да се побере в кръга
+            // След това ги умножаваме по множителя от слайдъра
+            let maxWidth, maxHeight;
+            if (userAspect > 1) {
+                // Снимката е по-широка - ограничаваме по ширина
+                maxWidth = circleDiameter;
+                maxHeight = maxWidth / userAspect;
+            } else {
+                // Снимката е по-висока или квадратна - ограничаваме по височина
+                maxHeight = circleDiameter;
+                maxWidth = maxHeight * userAspect;
+            }
+            
+            // Прилагаме множителя от слайдъра, но гарантираме че снимката не излиза от кръга
+            userWidth = maxWidth * sizeMultiplier;
+            userHeight = maxHeight * sizeMultiplier;
+            
+            // Проверяваме дали снимката излиза от кръга и я ограничаваме ако е необходимо
+            const maxDimension = Math.max(userWidth, userHeight);
+            if (maxDimension > circleDiameter) {
+                const scale = circleDiameter / maxDimension;
+                userWidth *= scale;
+                userHeight *= scale;
+            }
+
+            console.log('Размери на снимката:', userWidth, 'x', userHeight);
+            console.log('Радиус на кръга:', radius);
+            console.log('Център:', centerX, centerY);
+
+            // Центриране с възможност за преместване
+            const offsetX = (currentSettings.positionX / 100) * previewCanvas.width * 0.2;
+            const offsetY = (currentSettings.positionY / 100) * previewCanvas.height * 0.2;
+
+            const x = centerX - userWidth / 2 + offsetX;
+            const y = centerY - userHeight / 2 + offsetY;
+
+            console.log('Позиция на снимката:', x, y);
+
+            // Задаваме прозрачност
+            ctx.globalAlpha = currentSettings.opacity / 100;
+
+            // Рисуваме снимката на потребителя с кръгла маска
+            try {
+                ctx.drawImage(userImage, x, y, userWidth, userHeight);
+                console.log('Снимката е нарисувана успешно');
+            } catch (error) {
+                console.error('Грешка при рисуване на снимката:', error);
+            }
+
+            // Възстановяваме прозрачността и маската
+            ctx.globalAlpha = 1.0;
+            ctx.restore();
+
+            // Рисуваме рамката отгоре (центрирана)
+            const frameX = (previewCanvas.width - frameToUse.width) / 2;
+            const frameY = (previewCanvas.height - frameToUse.height) / 2;
+            
+            // Рисуваме обработената рамка (без бял фон)
+            ctx.drawImage(frameToUse, frameX, frameY);
+        }
+
+        // Слайдъри за контрол
+        sizeSlider.addEventListener('input', function(e) {
+            currentSettings.size = parseInt(e.target.value);
+            sizeValue.textContent = currentSettings.size + '%';
+            render();
+        });
+
+        positionXSlider.addEventListener('input', function(e) {
+            currentSettings.positionX = parseInt(e.target.value);
+            positionXValue.textContent = currentSettings.positionX;
+            render();
+        });
+
+        positionYSlider.addEventListener('input', function(e) {
+            currentSettings.positionY = parseInt(e.target.value);
+            positionYValue.textContent = currentSettings.positionY;
+            render();
+        });
+
+        opacitySlider.addEventListener('input', function(e) {
+            currentSettings.opacity = parseInt(e.target.value);
+            opacityValue.textContent = currentSettings.opacity + '%';
+            render();
+        });
+
+        // Изтегляне на снимката
+        downloadBtn.addEventListener('click', function() {
+            const link = document.createElement('a');
+            link.download = 'profile_with_frame.png';
+            link.href = previewCanvas.toDataURL('image/png');
+            link.click();
+        });
+
+        // Рестарт
+        resetBtn.addEventListener('click', function() {
+            photoInput.value = '';
+            userImage = null;
+            controls.style.display = 'none';
+            downloadBtn.disabled = true;
+            resetBtn.disabled = true;
+            ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+            
+            // Възстановяване на настройките
+            currentSettings = {
+                size: 100,
+                positionX: 0,
+                positionY: 0,
+                opacity: 100
+            };
+            sizeSlider.value = 100;
+            positionXSlider.value = 0;
+            positionYSlider.value = 0;
+            opacitySlider.value = 100;
+            sizeValue.textContent = '100%';
+            positionXValue.textContent = '0';
+            positionYValue.textContent = '0';
+            opacityValue.textContent = '100%';
+        });
+
+        // Зареждане на рамката при стартиране
+        loadFrame();
+        } // Край на initializeApp()
+        
+        // Ако DOM вече е зареден, извикваме веднага
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeApp);
+        } else {
+            initializeApp();
+        }
+    </script>
+</body>
+</html>
