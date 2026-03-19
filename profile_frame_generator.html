@@ -196,6 +196,29 @@
     bannerImg.onerror = () => { brandBanner = null; render(); };
     bannerImg.src = BANNER_URL;
 
+    /** Бяло квадратче с тюркоазена стрелка ↗ (официалната иконка на lockup-а) */
+    function drawPBArrowIcon(ctx, x, y, s, teal) {
+        const t = teal || '#2a7a6e';
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(x, y, s, s);
+        const inset = s * 0.2;
+        ctx.strokeStyle = t;
+        ctx.lineWidth = Math.max(1.8, s * 0.09);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x + inset, y + s - inset);
+        ctx.lineTo(x + s - inset, y + inset);
+        ctx.stroke();
+        const ah = s * 0.22;
+        ctx.beginPath();
+        ctx.moveTo(x + s - inset, y + inset);
+        ctx.lineTo(x + s - inset - ah, y + inset + ah * 0.15);
+        ctx.moveTo(x + s - inset, y + inset);
+        ctx.lineTo(x + s - inset - ah * 0.15, y + inset + ah);
+        ctx.stroke();
+    }
+
     function drawBannerFallback(ctx, size, bandTop) {
         const bh = size - bandTop;
         const g = ctx.createLinearGradient(0, bandTop, 0, size);
@@ -204,13 +227,27 @@
         ctx.fillStyle = g;
         ctx.fillRect(0, bandTop, size, bh);
         const cx = size / 2;
-        const mid = bandTop + bh * 0.38;
+        const mid = bandTop + bh * 0.36;
+        const fs1 = bh * 0.11;
+        const fs2 = bh * 0.12;
         ctx.fillStyle = '#fff';
+        ctx.font = '800 ' + fs1 + 'px Montserrat, sans-serif';
+        const w1 = ctx.measureText('ПРОГРЕСИВНА').width;
+        ctx.font = '800 ' + fs2 + 'px Montserrat, sans-serif';
+        const w2 = ctx.measureText('БЪЛГАРИЯ').width;
+        const blockW = Math.max(w1, w2);
+        const gap = Math.max(8, bh * 0.035);
+        const iconS = Math.max(18, bh * 0.13);
+        const rowW = w1 + gap + iconS;
+        const leftX = cx - rowW / 2;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+        ctx.font = '800 ' + fs1 + 'px Montserrat, sans-serif';
+        ctx.fillText('ПРОГРЕСИВНА', leftX, mid);
+        drawPBArrowIcon(ctx, leftX + w1 + gap, mid - iconS * 0.78, iconS, '#2a7a6e');
+        ctx.font = '800 ' + fs2 + 'px Montserrat, sans-serif';
+        ctx.fillText('БЪЛГАРИЯ', leftX, mid + bh * 0.14);
         ctx.textAlign = 'center';
-        ctx.font = '800 ' + (bh * 0.11) + 'px Montserrat, sans-serif';
-        ctx.fillText('ПРОГРЕСИВНА', cx, mid);
-        ctx.font = '800 ' + (bh * 0.12) + 'px Montserrat, sans-serif';
-        ctx.fillText('БЪЛГАРИЯ', cx, mid + bh * 0.14);
         const box = bh * 0.42;
         const by = bandTop + bh * 0.58;
         ctx.fillStyle = '#fff';
@@ -266,7 +303,7 @@
         if (brandBanner && brandBanner.complete && brandBanner.naturalWidth > 0) {
             const iw = brandBanner.naturalWidth;
             const ih = brandBanner.naturalHeight;
-            const m = 0.025;
+            const m = 0;
             const sx = iw * m, sy = ih * m, sw = iw * (1 - 2 * m), sh = ih * (1 - 2 * m);
             if (sw < 8 || sh < 8) {
                 ctx.drawImage(brandBanner, 0, bandTop, size, bandH);
@@ -278,7 +315,9 @@
                 dh *= bs;
                 if (dw > size - 6) { const r = (size - 6) / dw; dw *= r; dh *= r; }
                 if (dh > bandH - 4) { const r = (bandH - 4) / dh; dw *= r; dh *= r; }
-                ctx.drawImage(brandBanner, sx, sy, sw, sh, (size - dw) / 2, bandTop + (bandH - dh) / 2, dw, dh);
+                const dx = (size - dw) / 2;
+                const dy = bandTop + (bandH - dh) / 2;
+                ctx.drawImage(brandBanner, sx, sy, sw, sh, dx, dy, dw, dh);
             }
         } else {
             drawBannerFallback(ctx, size, bandTop);
