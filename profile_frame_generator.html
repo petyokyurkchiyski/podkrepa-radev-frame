@@ -157,6 +157,7 @@
     </div>
 
     <script>
+    // Само официалният банер от проекта — без подмяна. Резервът по-долу се ползва САМО ако този URL не се зареди (404/мрежа).
     const BANNER_URL = '/assets/pb_banner_lockup.png';
     const CANVAS_SIZE = 800;
     const PB_GREEN = '#1b5e3b';
@@ -219,6 +220,7 @@
         ctx.stroke();
     }
 
+    /** Показва се САМО при грешка при зареждане на официалния PNG — не е подмяна на логото. */
     function drawBannerFallback(ctx, size, bandTop) {
         const bh = size - bandTop;
         const g = ctx.createLinearGradient(0, bandTop, 0, size);

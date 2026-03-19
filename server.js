@@ -10,18 +10,24 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Route за рамката - трябва да е преди express.static за да работи правилно
-app.get('/liftapp.png', (req, res) => {
-    const rootPath = path.join(__dirname, 'liftapp.png');
-    res.sendFile(rootPath, (err) => {
+// Официален банер — винаги от файла, без подмяна
+app.get('/assets/pb_banner_lockup.png', (req, res) => {
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.sendFile(path.join(__dirname, 'assets', 'pb_banner_lockup.png'), (err) => {
         if (err) {
-            console.error('Грешка при зареждане на liftapp.png:', err);
-            res.status(404).send('Файлът liftapp.png не е намерен');
+            console.error('Грешка при зареждане на официалния банер:', err);
+            res.status(404).send('Официалният банер не е намерен');
         }
     });
 });
 
-// Статични файлове - след специфичните routes
+app.get('/liftapp.png', (req, res) => {
+    res.sendFile(path.join(__dirname, 'liftapp.png'), (err) => {
+        if (err) res.status(404).send('Файлът liftapp.png не е намерен');
+    });
+});
+
+// Статични файлове
 app.use(express.static(__dirname));
 
 // Настройка на multer за качване на файлове
