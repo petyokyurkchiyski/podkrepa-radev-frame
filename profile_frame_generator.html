@@ -70,7 +70,15 @@
             gap: 14px 16px;
         }
         @media (max-width: 720px) { .controls { grid-template-columns: 1fr 1fr; } }
-        .controls label { font-size: 12px; font-weight: 600; color: #1b5e3b; display: block; margin-bottom: 6px; }
+        .controls label { font-size: 12px; font-weight: 600; color: #1b5e3b; display: block; margin-bottom: 2px; }
+        .ctrl-val { font-weight: 800; color: #0f3d2e; }
+        .ctrl-hint {
+            font-size: 10px;
+            font-weight: 500;
+            color: #5a6d66;
+            line-height: 1.35;
+            margin: 0 0 6px 0;
+        }
         .controls input[type="range"] { width: 100%; }
         .controls-note { grid-column: 1 / -1; font-size: 11px; color: #666; margin-top: 4px; }
         .btn-small {
@@ -98,34 +106,41 @@
         </label>
         <div class="controls" id="controls">
             <div>
-                <label>Мащаб на снимката <span id="vSize">100</span>%</label>
+                <label>Мащаб на снимката <span id="vSize" class="ctrl-val">100</span>%</label>
+                <p class="ctrl-hint">По-малко % = по-отдалечена снимка в кръга. По-голямо = увеличение (приближаване).</p>
                 <input type="range" id="sizeSlider" min="60" max="150" value="100">
             </div>
             <div>
-                <label>Х позиция <span id="vPosX">0</span></label>
+                <label>Хоризонтално <span id="vPosX" class="ctrl-val">0</span></label>
+                <p class="ctrl-hint">Наляво ← … център (0) … → надясно. Само след като качите снимка.</p>
                 <input type="range" id="posXSlider" min="-100" max="100" value="0">
             </div>
             <div>
-                <label>Y позиция <span id="vPosY">0</span></label>
+                <label>Вертикално <span id="vPosY" class="ctrl-val">0</span></label>
+                <p class="ctrl-hint">Нагоре ↑ … център (0) … надолу ↓. Само след като качите снимка.</p>
                 <input type="range" id="posYSlider" min="-100" max="100" value="0">
             </div>
             <div>
-                <label>Дебелина на лентата <span id="vThick">50</span>%</label>
+                <label>Дебелина на лентата <span id="vThick" class="ctrl-val">50</span>%</label>
+                <p class="ctrl-hint">По-висок % = по-висока зона с банер „Прогресивна България“ и „21“.</p>
                 <input type="range" id="thickSlider" min="25" max="100" value="50">
             </div>
             <div>
-                <label>Дебелина на контура <span id="vStroke">50</span>%</label>
+                <label>Дебелина на контура <span id="vStroke" class="ctrl-val">50</span>%</label>
+                <p class="ctrl-hint">Зеленият пръстен около кръга — по-дебел или по-тънък.</p>
                 <input type="range" id="strokeSlider" min="25" max="100" value="50">
             </div>
             <div>
-                <label>Размер на кръга <span id="vCircle">100</span>%</label>
+                <label>Размер на кръга <span id="vCircle" class="ctrl-val">100</span>%</label>
+                <p class="ctrl-hint">100% = максимален кръг. По-малко = по-малък кръг, повече сиво поле около него.</p>
                 <input type="range" id="circleSlider" min="88" max="100" value="100">
             </div>
             <div>
-                <label>Мащаб на банера <span id="vBanner">100</span>%</label>
+                <label>Мащаб на банера <span id="vBanner" class="ctrl-val">100</span>%</label>
+                <p class="ctrl-hint">По-малък % = по-дребен lockup в лентата. По-голям = по-едър.</p>
                 <input type="range" id="bannerSlider" min="70" max="130" value="100">
             </div>
-            <p class="controls-note">Х/Y и мащаб на снимката след качване. Останалото — веднага в прегледа.</p>
+            <p class="controls-note">Мащаб, хоризонтално и вертикално важат след качване на снимка. Останалите плъзгачи се виждат веднага в прегледа.</p>
             <div style="grid-column:1/-1;">
                 <button type="button" class="btn-small" id="resetSettingsBtn">Нулирай настройките</button>
             </div>
