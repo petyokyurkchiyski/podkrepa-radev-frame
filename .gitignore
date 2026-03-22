@@ -1,5 +1,23 @@
+# Dependencies
 node_modules/
+package-lock.json
+
+# Backups (защитена папка - не се публикува)
+.backups/
+
+# Environment variables
 .env
-.DS_Store
+.env.local
+
+# Logs
 *.log
 npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+.vercel

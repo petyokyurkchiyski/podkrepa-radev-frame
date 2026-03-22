@@ -49,7 +49,18 @@
             overflow: hidden;
             box-shadow: 0 8px 28px rgba(27,94,59,.35);
         }
-        #previewCanvas { display: block; max-width: 100%; height: auto; background: #e8e8e8; }
+        /* Шахматна подложка = прозрачност; не е „сив фон“ върху снимката */
+        #previewCanvas {
+            display: block; max-width: 100%; height: auto;
+            background-color: #c8c8c8;
+            background-image:
+                linear-gradient(45deg, #b0b0b0 25%, transparent 25%),
+                linear-gradient(-45deg, #b0b0b0 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #b0b0b0 75%),
+                linear-gradient(-45deg, transparent 75%, #b0b0b0 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+        }
         .btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
         .btn {
             padding: 14px 28px;
@@ -132,7 +143,7 @@
             </div>
             <div>
                 <label>Размер на кръга <span id="vCircle" class="ctrl-val">100</span>%</label>
-                <p class="ctrl-hint">100% = максимален кръг. По-малко = по-малък кръг, повече сиво поле около него.</p>
+                <p class="ctrl-hint">100% = максимален кръг. По-малко = по-малък кръг; около него е прозрачно (при изтегляне на PNG).</p>
                 <input type="range" id="circleSlider" min="88" max="100" value="100">
             </div>
             <div>
@@ -157,13 +168,17 @@
     </div>
 
     <script>
-    // Само официалният банер от проекта — без подмяна. Резервът по-долу се ползва САМО ако този URL не се зареди (404/мрежа).
-    const BANNER_URL = '/assets/pb_banner_lockup.png';
+    // Frame = original image as overlay (one-to-one). Overlay: assets/frame_overlay.png from build_frame_overlay.py
     const CANVAS_SIZE = 800;
-    const PB_GREEN = '#1b5e3b';
+    const FRAME_OVERLAY_URL = '/assets/frame_overlay.png?v=9';
+    /** Вътрешен кръг за снимка (бяла зона в макета), мащаб от 720px */
+    const CENTER = 400;
+    const PHOTO_R = 374;
+    /** Външен кръг на макета — отрязва бяла лента/ъгли извън кръга */
+    const FRAME_CLIP_R = 400;
 
     const canvas = document.getElementById('previewCanvas');
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: true });
     const photoInput = document.getElementById('photoInput');
     const downloadBtn = document.getElementById('downloadBtn');
     const resetBtn = document.getElementById('resetBtn');
@@ -184,193 +199,76 @@
     const vBanner = document.getElementById('vBanner');
 
     let userImage = null;
-    let brandBanner = null;
+    let frameOverlay = null;
     const DEFAULT_SETTINGS = {
         size: 100, thick: 50, posX: 0, posY: 0,
         stroke: 50, circle: 100, bannerScale: 100
     };
     const settings = { ...DEFAULT_SETTINGS };
 
-    const bannerImg = new Image();
-    bannerImg.crossOrigin = 'anonymous';
-    bannerImg.onload = () => { brandBanner = bannerImg; render(); };
-    bannerImg.onerror = () => { brandBanner = null; render(); };
-    bannerImg.src = BANNER_URL;
-
-    /** Бяло квадратче с тюркоазена стрелка ↗ (официалната иконка на lockup-а) */
-    function drawPBArrowIcon(ctx, x, y, s, teal) {
-        const t = teal || '#2a7a6e';
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(x, y, s, s);
-        const inset = s * 0.2;
-        ctx.strokeStyle = t;
-        ctx.lineWidth = Math.max(1.8, s * 0.09);
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.beginPath();
-        ctx.moveTo(x + inset, y + s - inset);
-        ctx.lineTo(x + s - inset, y + inset);
-        ctx.stroke();
-        const ah = s * 0.22;
-        ctx.beginPath();
-        ctx.moveTo(x + s - inset, y + inset);
-        ctx.lineTo(x + s - inset - ah, y + inset + ah * 0.15);
-        ctx.moveTo(x + s - inset, y + inset);
-        ctx.lineTo(x + s - inset - ah * 0.15, y + inset + ah);
-        ctx.stroke();
-    }
-
-    /** Показва се САМО при грешка при зареждане на официалния PNG — не е подмяна на логото. */
-    function drawBannerFallback(ctx, size, bandTop) {
-        const bh = size - bandTop;
-        const g = ctx.createLinearGradient(0, bandTop, 0, size);
-        g.addColorStop(0, '#3d9b8a');
-        g.addColorStop(1, '#2a7a6e');
-        ctx.fillStyle = g;
-        ctx.fillRect(0, bandTop, size, bh);
-        const cx = size / 2;
-        const mid = bandTop + bh * 0.36;
-        const fs1 = bh * 0.11;
-        const fs2 = bh * 0.12;
-        ctx.fillStyle = '#fff';
-        ctx.font = '800 ' + fs1 + 'px Montserrat, sans-serif';
-        const w1 = ctx.measureText('ПРОГРЕСИВНА').width;
-        ctx.font = '800 ' + fs2 + 'px Montserrat, sans-serif';
-        const w2 = ctx.measureText('БЪЛГАРИЯ').width;
-        const blockW = Math.max(w1, w2);
-        const gap = Math.max(8, bh * 0.035);
-        const iconS = Math.max(18, bh * 0.13);
-        const rowW = w1 + gap + iconS;
-        const leftX = cx - rowW / 2;
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'alphabetic';
-        ctx.font = '800 ' + fs1 + 'px Montserrat, sans-serif';
-        ctx.fillText('ПРОГРЕСИВНА', leftX, mid);
-        drawPBArrowIcon(ctx, leftX + w1 + gap, mid - iconS * 0.78, iconS, '#2a7a6e');
-        ctx.font = '800 ' + fs2 + 'px Montserrat, sans-serif';
-        ctx.fillText('БЪЛГАРИЯ', leftX, mid + bh * 0.14);
-        ctx.textAlign = 'center';
-        const box = bh * 0.42;
-        const by = bandTop + bh * 0.58;
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(cx - box / 2, by, box, box * 0.85);
-        ctx.fillStyle = PB_GREEN;
-        ctx.textBaseline = 'middle';
-        ctx.font = '900 ' + (box * 0.55) + 'px Montserrat, sans-serif';
-        ctx.fillText('21', cx, by + box * 0.42);
-        ctx.textBaseline = 'alphabetic';
-    }
-
-    function getOuterRadius(size) {
-        return (size / 2 - 4) * (settings.circle / 100);
-    }
-
-    function getBorderWidth(size) {
-        return size * (0.006 + 0.016 * (settings.stroke / 100));
-    }
-
-    function drawFrameLayer(ctx, size, hasPhoto) {
-        const center = size / 2;
-        const outerR = getOuterRadius(size);
-        const t = settings.thick / 100;
-        const bandH = size * (0.22 + 0.16 * t);
-        const bandTop = size - bandH;
-        const borderW = getBorderWidth(size);
-
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(center, center, outerR, 0, Math.PI * 2);
-        ctx.clip();
-
-        if (!hasPhoto) {
-            ctx.fillStyle = '#dedede';
-            ctx.beginPath();
-            ctx.arc(center, center, outerR - borderW * 0.5, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#bbb';
-            ctx.font = '600 22px Montserrat, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('Качете снимка', center, center - 12);
-            ctx.font = '400 15px Montserrat, sans-serif';
-            ctx.fillText('или ползвайте прегледа по-долу', center, center + 18);
-        }
-
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(0, bandTop, size, bandH + 4);
-        ctx.clip();
-        ctx.fillStyle = '#3d9b8a';
-        ctx.fillRect(0, bandTop, size, bandH + 4);
-
-        if (brandBanner && brandBanner.complete && brandBanner.naturalWidth > 0) {
-            const iw = brandBanner.naturalWidth;
-            const ih = brandBanner.naturalHeight;
-            const m = 0;
-            const sx = iw * m, sy = ih * m, sw = iw * (1 - 2 * m), sh = ih * (1 - 2 * m);
-            if (sw < 8 || sh < 8) {
-                ctx.drawImage(brandBanner, 0, bandTop, size, bandH);
-            } else {
-                const scale = Math.min(size / sw, bandH / sh);
-                let dw = sw * scale, dh = sh * scale;
-                const bs = settings.bannerScale / 100;
-                dw *= bs;
-                dh *= bs;
-                if (dw > size - 6) { const r = (size - 6) / dw; dw *= r; dh *= r; }
-                if (dh > bandH - 4) { const r = (bandH - 4) / dh; dw *= r; dh *= r; }
-                const dx = (size - dw) / 2;
-                const dy = bandTop + (bandH - dh) / 2;
-                ctx.drawImage(brandBanner, sx, sy, sw, sh, dx, dy, dw, dh);
-            }
-        } else {
-            drawBannerFallback(ctx, size, bandTop);
-        }
-        ctx.restore();
-        ctx.restore();
-
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(center, center, outerR, 0, Math.PI * 2);
-        ctx.strokeStyle = PB_GREEN;
-        ctx.lineWidth = borderW;
-        ctx.lineJoin = 'round';
-        ctx.lineCap = 'round';
-        ctx.stroke();
-        ctx.restore();
-    }
+    const overlayImg = new Image();
+    overlayImg.onload = function () { frameOverlay = overlayImg; render(); };
+    overlayImg.onerror = function () { frameOverlay = null; render(); };
+    overlayImg.src = FRAME_OVERLAY_URL;
 
     function render() {
         const s = CANVAS_SIZE;
-        ctx.fillStyle = '#e8e8e8';
-        ctx.fillRect(0, 0, s, s);
-        const center = s / 2;
-        const outerR = getOuterRadius(s);
+        ctx.clearRect(0, 0, s, s);
         const sc = settings.size / 100;
-        const borderW = getBorderWidth(s);
+        const px = settings.posX * s * 0.004;
+        const py = settings.posY * s * 0.004;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(CENTER, CENTER, FRAME_CLIP_R, 0, Math.PI * 2);
+        ctx.clip();
 
         if (userImage && userImage.complete) {
             ctx.save();
-            const photoR = Math.max(outerR - borderW * 0.4, outerR * 0.88);
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
             ctx.beginPath();
-            ctx.arc(center, center, photoR, 0, Math.PI * 2);
+            ctx.arc(CENTER, CENTER, PHOTO_R, 0, Math.PI * 2);
             ctx.clip();
             const iw = userImage.naturalWidth;
             const ih = userImage.naturalHeight;
-            const cover = Math.max((photoR * 2) / iw, (photoR * 2) / ih);
+            const cover = Math.max((PHOTO_R * 2) / iw, (PHOTO_R * 2) / ih);
             let w = iw * cover * sc;
             let h = ih * cover * sc;
-            const px = settings.posX * s * 0.004;
-            const py = settings.posY * s * 0.004;
             if (sc < 0.995) {
-                ctx.fillStyle = '#2a2a2a';
+                ctx.fillStyle = '#365e46';
                 ctx.beginPath();
-                ctx.arc(center, center, photoR, 0, Math.PI * 2);
+                ctx.arc(CENTER, CENTER, PHOTO_R, 0, Math.PI * 2);
                 ctx.fill();
             }
-            ctx.drawImage(userImage, center - w / 2 + px, center - h / 2 + py, w, h);
+            ctx.drawImage(userImage, CENTER - w / 2 + px, CENTER - h / 2 + py, w, h);
+            ctx.restore();
+        } else {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(CENTER, CENTER, PHOTO_R, 0, Math.PI * 2);
+            ctx.clip();
+            ctx.fillStyle = '#365e46';
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.font = '600 22px Montserrat, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Качете снимка', CENTER, CENTER - 12);
+            ctx.font = '400 15px Montserrat, sans-serif';
+            ctx.fillText('или ползвайте прегледа по-долу', CENTER, CENTER + 18);
             ctx.restore();
         }
 
-        drawFrameLayer(ctx, s, !!userImage);
+        if (frameOverlay && frameOverlay.complete && frameOverlay.naturalWidth > 0) {
+            ctx.save();
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(frameOverlay, 0, 0, s, s);
+            ctx.restore();
+        }
+
+        ctx.restore();
+
         downloadBtn.disabled = !userImage;
         resetBtn.disabled = !userImage;
     }

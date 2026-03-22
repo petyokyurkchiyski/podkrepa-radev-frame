@@ -21,6 +21,13 @@ app.get('/assets/pb_banner_lockup.png', (req, res) => {
     });
 });
 
+app.get(/^\/assets\/frame_overlay\.png/, (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(__dirname, 'assets', 'frame_overlay.png'), (err) => {
+        if (err) res.status(404).send('frame_overlay.png не е намерен. Пуснете: python build_frame_overlay.py');
+    });
+});
+
 app.get('/liftapp.png', (req, res) => {
     res.sendFile(path.join(__dirname, 'liftapp.png'), (err) => {
         if (err) res.status(404).send('Файлът liftapp.png не е намерен');
