@@ -74,37 +74,6 @@
         .btn-dl { background: #1b5e3b; color: #fff; }
         .btn-dl:disabled { opacity: .45; cursor: not-allowed; }
         .btn-rst { background: #e0e0e0; color: #333; }
-        .controls {
-            margin: 18px 0;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 14px 16px;
-        }
-        @media (max-width: 720px) { .controls { grid-template-columns: 1fr 1fr; } }
-        .controls label { font-size: 12px; font-weight: 600; color: #1b5e3b; display: block; margin-bottom: 2px; }
-        .ctrl-val { font-weight: 800; color: #0f3d2e; }
-        .ctrl-hint {
-            font-size: 10px;
-            font-weight: 500;
-            color: #5a6d66;
-            line-height: 1.35;
-            margin: 0 0 6px 0;
-        }
-        .controls input[type="range"] { width: 100%; }
-        .controls-note { grid-column: 1 / -1; font-size: 11px; color: #666; margin-top: 4px; }
-        .btn-small {
-            margin-top: 8px;
-            padding: 8px 16px;
-            font-size: 13px;
-            font-weight: 700;
-            border: 1px solid #1b5e3b;
-            background: #fff;
-            color: #1b5e3b;
-            border-radius: 8px;
-            cursor: pointer;
-            font-family: inherit;
-        }
-        .btn-small:hover { background: #f0f7f4; }
     </style>
 </head>
 <body>
@@ -115,47 +84,6 @@
             Изберете снимка
             <input type="file" id="photoInput" accept="image/*">
         </label>
-        <div class="controls" id="controls">
-            <div>
-                <label>Мащаб на снимката <span id="vSize" class="ctrl-val">100</span>%</label>
-                <p class="ctrl-hint">По-малко % = по-отдалечена снимка в кръга. По-голямо = увеличение (приближаване).</p>
-                <input type="range" id="sizeSlider" min="60" max="150" value="100">
-            </div>
-            <div>
-                <label>Хоризонтално <span id="vPosX" class="ctrl-val">0</span></label>
-                <p class="ctrl-hint">Наляво ← … център (0) … → надясно. Само след като качите снимка.</p>
-                <input type="range" id="posXSlider" min="-100" max="100" value="0">
-            </div>
-            <div>
-                <label>Вертикално <span id="vPosY" class="ctrl-val">0</span></label>
-                <p class="ctrl-hint">Нагоре ↑ … център (0) … надолу ↓. Само след като качите снимка.</p>
-                <input type="range" id="posYSlider" min="-100" max="100" value="0">
-            </div>
-            <div>
-                <label>Дебелина на лентата <span id="vThick" class="ctrl-val">50</span>%</label>
-                <p class="ctrl-hint">По-висок % = по-висока зона с банер „Прогресивна България“ и „21“.</p>
-                <input type="range" id="thickSlider" min="25" max="100" value="50">
-            </div>
-            <div>
-                <label>Дебелина на контура <span id="vStroke" class="ctrl-val">50</span>%</label>
-                <p class="ctrl-hint">Зеленият пръстен около кръга — по-дебел или по-тънък.</p>
-                <input type="range" id="strokeSlider" min="25" max="100" value="50">
-            </div>
-            <div>
-                <label>Размер на кръга <span id="vCircle" class="ctrl-val">100</span>%</label>
-                <p class="ctrl-hint">100% = максимален кръг. По-малко = по-малък кръг; около него е прозрачно (при изтегляне на PNG).</p>
-                <input type="range" id="circleSlider" min="88" max="100" value="100">
-            </div>
-            <div>
-                <label>Мащаб на банера <span id="vBanner" class="ctrl-val">100</span>%</label>
-                <p class="ctrl-hint">По-малък % = по-дребен lockup в лентата. По-голям = по-едър.</p>
-                <input type="range" id="bannerSlider" min="70" max="130" value="100">
-            </div>
-            <p class="controls-note">Мащаб, хоризонтално и вертикално важат след качване на снимка. Останалите плъзгачи се виждат веднага в прегледа.</p>
-            <div style="grid-column:1/-1;">
-                <button type="button" class="btn-small" id="resetSettingsBtn">Нулирай настройките</button>
-            </div>
-        </div>
         <div class="preview-wrap">
             <div class="canvas-box">
                 <canvas id="previewCanvas" width="800" height="800"></canvas>
@@ -170,7 +98,7 @@
     <script>
     // Frame = original image as overlay (one-to-one). Overlay: assets/frame_overlay.png from build_frame_overlay.py
     const CANVAS_SIZE = 800;
-    const FRAME_OVERLAY_URL = '/assets/frame_overlay.png?v=9';
+    const FRAME_OVERLAY_URL = '/assets/frame_overlay.png?v=10';
     /** Вътрешен кръг за снимка (бяла зона в макета), мащаб от 720px */
     const CENTER = 400;
     const PHOTO_R = 374;
@@ -182,29 +110,9 @@
     const photoInput = document.getElementById('photoInput');
     const downloadBtn = document.getElementById('downloadBtn');
     const resetBtn = document.getElementById('resetBtn');
-    const sizeSlider = document.getElementById('sizeSlider');
-    const thickSlider = document.getElementById('thickSlider');
-    const posXSlider = document.getElementById('posXSlider');
-    const posYSlider = document.getElementById('posYSlider');
-    const strokeSlider = document.getElementById('strokeSlider');
-    const circleSlider = document.getElementById('circleSlider');
-    const bannerSlider = document.getElementById('bannerSlider');
-    const resetSettingsBtn = document.getElementById('resetSettingsBtn');
-    const vSize = document.getElementById('vSize');
-    const vThick = document.getElementById('vThick');
-    const vPosX = document.getElementById('vPosX');
-    const vPosY = document.getElementById('vPosY');
-    const vStroke = document.getElementById('vStroke');
-    const vCircle = document.getElementById('vCircle');
-    const vBanner = document.getElementById('vBanner');
 
     let userImage = null;
     let frameOverlay = null;
-    const DEFAULT_SETTINGS = {
-        size: 100, thick: 50, posX: 0, posY: 0,
-        stroke: 50, circle: 100, bannerScale: 100
-    };
-    const settings = { ...DEFAULT_SETTINGS };
 
     const overlayImg = new Image();
     overlayImg.onload = function () { frameOverlay = overlayImg; render(); };
@@ -214,10 +122,6 @@
     function render() {
         const s = CANVAS_SIZE;
         ctx.clearRect(0, 0, s, s);
-        const sc = settings.size / 100;
-        const px = settings.posX * s * 0.004;
-        const py = settings.posY * s * 0.004;
-
         ctx.save();
         ctx.beginPath();
         ctx.arc(CENTER, CENTER, FRAME_CLIP_R, 0, Math.PI * 2);
@@ -233,15 +137,9 @@
             const iw = userImage.naturalWidth;
             const ih = userImage.naturalHeight;
             const cover = Math.max((PHOTO_R * 2) / iw, (PHOTO_R * 2) / ih);
-            let w = iw * cover * sc;
-            let h = ih * cover * sc;
-            if (sc < 0.995) {
-                ctx.fillStyle = '#365e46';
-                ctx.beginPath();
-                ctx.arc(CENTER, CENTER, PHOTO_R, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            ctx.drawImage(userImage, CENTER - w / 2 + px, CENTER - h / 2 + py, w, h);
+            const w = iw * cover;
+            const h = ih * cover;
+            ctx.drawImage(userImage, CENTER - w / 2, CENTER - h / 2, w, h);
             ctx.restore();
         } else {
             ctx.save();
@@ -273,29 +171,6 @@
         resetBtn.disabled = !userImage;
     }
 
-    function applySettingsToUI() {
-        sizeSlider.value = settings.size;
-        thickSlider.value = settings.thick;
-        posXSlider.value = settings.posX;
-        posYSlider.value = settings.posY;
-        strokeSlider.value = settings.stroke;
-        circleSlider.value = settings.circle;
-        bannerSlider.value = settings.bannerScale;
-        vSize.textContent = settings.size;
-        vThick.textContent = settings.thick;
-        vPosX.textContent = settings.posX;
-        vPosY.textContent = settings.posY;
-        vStroke.textContent = settings.stroke;
-        vCircle.textContent = settings.circle;
-        vBanner.textContent = settings.bannerScale;
-    }
-
-    resetSettingsBtn.addEventListener('click', () => {
-        Object.assign(settings, DEFAULT_SETTINGS);
-        applySettingsToUI();
-        render();
-    });
-
     photoInput.addEventListener('change', function () {
         const f = this.files && this.files[0];
         if (!f) return;
@@ -307,14 +182,6 @@
         };
         r.readAsDataURL(f);
     });
-
-    sizeSlider.addEventListener('input', () => { settings.size = +sizeSlider.value; vSize.textContent = settings.size; render(); });
-    thickSlider.addEventListener('input', () => { settings.thick = +thickSlider.value; vThick.textContent = settings.thick; render(); });
-    posXSlider.addEventListener('input', () => { settings.posX = +posXSlider.value; vPosX.textContent = settings.posX; render(); });
-    posYSlider.addEventListener('input', () => { settings.posY = +posYSlider.value; vPosY.textContent = settings.posY; render(); });
-    strokeSlider.addEventListener('input', () => { settings.stroke = +strokeSlider.value; vStroke.textContent = settings.stroke; render(); });
-    circleSlider.addEventListener('input', () => { settings.circle = +circleSlider.value; vCircle.textContent = settings.circle; render(); });
-    bannerSlider.addEventListener('input', () => { settings.bannerScale = +bannerSlider.value; vBanner.textContent = settings.bannerScale; render(); });
 
     downloadBtn.addEventListener('click', () => {
         const a = document.createElement('a');
@@ -328,7 +195,6 @@
         render();
     });
 
-    applySettingsToUI();
     render();
     </script>
 </body>
