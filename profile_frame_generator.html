@@ -74,6 +74,85 @@
         .btn-dl { background: #1b5e3b; color: #fff; }
         .btn-dl:disabled { opacity: .45; cursor: not-allowed; }
         .btn-rst { background: #e0e0e0; color: #333; }
+        .photo-controls {
+            margin: 22px 0 8px;
+            padding: 20px 18px;
+            background: linear-gradient(180deg, #f4faf6 0%, #fff 100%);
+            border: 1px solid #c8e0d4;
+            border-radius: 14px;
+        }
+        .photo-controls h2 {
+            font-size: 16px;
+            font-weight: 800;
+            color: #0f3d2e;
+            margin-bottom: 4px;
+            text-align: center;
+        }
+        .photo-controls .lead {
+            font-size: 12px;
+            color: #5a6d66;
+            text-align: center;
+            margin-bottom: 16px;
+            line-height: 1.4;
+        }
+        .ctrl-row {
+            margin-bottom: 16px;
+        }
+        .ctrl-row:last-of-type { margin-bottom: 12px; }
+        .ctrl-row label {
+            display: block;
+            font-size: 14px;
+            font-weight: 700;
+            color: #1b5e3b;
+            margin-bottom: 4px;
+        }
+        .ctrl-row .en {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: #6a7d76;
+            margin-bottom: 8px;
+        }
+        .ctrl-row .row-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 4px;
+        }
+        .ctrl-val {
+            font-size: 15px;
+            font-weight: 800;
+            color: #0f3d2e;
+            min-width: 3.2em;
+            text-align: right;
+        }
+        .photo-controls input[type="range"] {
+            width: 100%;
+            height: 10px;
+            cursor: pointer;
+            accent-color: #1b5e3b;
+        }
+        .photo-controls.disabled {
+            opacity: .55;
+            pointer-events: none;
+        }
+        .btn-reset-adj {
+            display: block;
+            width: 100%;
+            margin-top: 4px;
+            padding: 10px 14px;
+            font-size: 13px;
+            font-weight: 700;
+            border: 1px solid #1b5e3b;
+            background: #fff;
+            color: #1b5e3b;
+            border-radius: 10px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .btn-reset-adj:hover:not(:disabled) { background: #e8f5ee; }
+        .btn-reset-adj:disabled { opacity: .5; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -84,11 +163,65 @@
             Изберете снимка
             <input type="file" id="photoInput" accept="image/*">
         </label>
+
+        <div class="photo-controls disabled" id="photoControls">
+            <h2>Снимка в кръга</h2>
+            <p class="lead">Плъзгачите важат след като качите снимка.<br><span lang="en">Sliders apply after you upload a photo.</span></p>
+
+            <div class="ctrl-row">
+                <div class="row-top">
+                    <label for="zoomSlider">🔍 Приближаване / отдалечаване (zoom)</label>
+                    <span class="ctrl-val"><span id="vZoom">100</span>%</span>
+                </div>
+                <span class="en" lang="en">Zoom in = larger face (tighter crop). Zoom out = see more around.</span>
+                <input type="range" id="zoomSlider" min="60" max="180" value="100" disabled>
+            </div>
+
+            <div class="ctrl-row">
+                <div class="row-top">
+                    <label for="posXSlider">↔ Наляво / надясно</label>
+                    <span class="ctrl-val" id="vPosX">0</span>
+                </div>
+                <span class="en" lang="en">Move photo left ← … center (0) … right →</span>
+                <input type="range" id="posXSlider" min="-100" max="100" value="0" disabled>
+            </div>
+
+            <div class="ctrl-row">
+                <div class="row-top">
+                    <label for="posYSlider">↕ Нагоре / надолу</label>
+                    <span class="ctrl-val" id="vPosY">0</span>
+                </div>
+                <span class="en" lang="en">Move photo up ↑ … center (0) … down ↓</span>
+                <input type="range" id="posYSlider" min="-100" max="100" value="0" disabled>
+            </div>
+
+            <div class="ctrl-row">
+                <div class="row-top">
+                    <label for="stretchXSlider">↔ Разтягане по ширина</label>
+                    <span class="ctrl-val"><span id="vStretchX">100</span>%</span>
+                </div>
+                <span class="en" lang="en">Stretch / squeeze photo horizontally (100% = normal)</span>
+                <input type="range" id="stretchXSlider" min="80" max="120" value="100" disabled>
+            </div>
+
+            <div class="ctrl-row">
+                <div class="row-top">
+                    <label for="stretchYSlider">↕ Разтягане по височина</label>
+                    <span class="ctrl-val"><span id="vStretchY">100</span>%</span>
+                </div>
+                <span class="en" lang="en">Stretch / squeeze photo vertically (100% = normal)</span>
+                <input type="range" id="stretchYSlider" min="80" max="120" value="100" disabled>
+            </div>
+
+            <button type="button" class="btn-reset-adj" id="resetAdjBtn" disabled>Нулирай мащаб, позиция и разтягане / Reset zoom, position &amp; stretch</button>
+        </div>
+
         <div class="preview-wrap">
             <div class="canvas-box">
                 <canvas id="previewCanvas" width="800" height="800"></canvas>
             </div>
         </div>
+
         <div class="btns">
             <button class="btn btn-dl" id="downloadBtn" disabled>⬇ Изтегли снимката</button>
             <button class="btn btn-rst" id="resetBtn" disabled>🔄 Нова снимка</button>
@@ -98,7 +231,7 @@
     <script>
     // Frame = original image as overlay (one-to-one). Overlay: assets/frame_overlay.png from build_frame_overlay.py
     const CANVAS_SIZE = 800;
-    const FRAME_OVERLAY_URL = '/assets/frame_overlay.png?v=10';
+    const FRAME_OVERLAY_URL = '/assets/frame_overlay.png?v=11';
     /** Вътрешен кръг за снимка (бяла зона в макета), мащаб от 720px */
     const CENTER = 400;
     const PHOTO_R = 374;
@@ -110,9 +243,50 @@
     const photoInput = document.getElementById('photoInput');
     const downloadBtn = document.getElementById('downloadBtn');
     const resetBtn = document.getElementById('resetBtn');
+    const photoControls = document.getElementById('photoControls');
+    const zoomSlider = document.getElementById('zoomSlider');
+    const posXSlider = document.getElementById('posXSlider');
+    const posYSlider = document.getElementById('posYSlider');
+    const stretchXSlider = document.getElementById('stretchXSlider');
+    const stretchYSlider = document.getElementById('stretchYSlider');
+    const resetAdjBtn = document.getElementById('resetAdjBtn');
+    const vZoom = document.getElementById('vZoom');
+    const vPosX = document.getElementById('vPosX');
+    const vPosY = document.getElementById('vPosY');
+    const vStretchX = document.getElementById('vStretchX');
+    const vStretchY = document.getElementById('vStretchY');
 
     let userImage = null;
     let frameOverlay = null;
+
+    const DEFAULT_ADJ = {
+        zoom: 100,
+        posX: 0,
+        posY: 0,
+        stretchX: 100,
+        stretchY: 100
+    };
+    const adj = { ...DEFAULT_ADJ };
+
+    function setPhotoControlsEnabled(on) {
+        photoControls.classList.toggle('disabled', !on);
+        [zoomSlider, posXSlider, posYSlider, stretchXSlider, stretchYSlider, resetAdjBtn].forEach((el) => {
+            el.disabled = !on;
+        });
+    }
+
+    function applyAdjToUI() {
+        zoomSlider.value = String(adj.zoom);
+        posXSlider.value = String(adj.posX);
+        posYSlider.value = String(adj.posY);
+        stretchXSlider.value = String(adj.stretchX);
+        stretchYSlider.value = String(adj.stretchY);
+        vZoom.textContent = String(adj.zoom);
+        vPosX.textContent = String(adj.posX);
+        vPosY.textContent = String(adj.posY);
+        vStretchX.textContent = String(adj.stretchX);
+        vStretchY.textContent = String(adj.stretchY);
+    }
 
     const overlayImg = new Image();
     overlayImg.onload = function () { frameOverlay = overlayImg; render(); };
@@ -137,9 +311,20 @@
             const iw = userImage.naturalWidth;
             const ih = userImage.naturalHeight;
             const cover = Math.max((PHOTO_R * 2) / iw, (PHOTO_R * 2) / ih);
-            const w = iw * cover;
-            const h = ih * cover;
-            ctx.drawImage(userImage, CENTER - w / 2, CENTER - h / 2, w, h);
+            const z = adj.zoom / 100;
+            const sx = adj.stretchX / 100;
+            const sy = adj.stretchY / 100;
+            let w = iw * cover * z * sx;
+            let h = ih * cover * z * sy;
+            const px = adj.posX * s * 0.004;
+            const py = adj.posY * s * 0.004;
+            if (z < 0.995) {
+                ctx.fillStyle = '#365e46';
+                ctx.beginPath();
+                ctx.arc(CENTER, CENTER, PHOTO_R, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.drawImage(userImage, CENTER - w / 2 + px, CENTER - h / 2 + py, w, h);
             ctx.restore();
         } else {
             ctx.save();
@@ -153,7 +338,7 @@
             ctx.textAlign = 'center';
             ctx.fillText('Качете снимка', CENTER, CENTER - 12);
             ctx.font = '400 15px Montserrat, sans-serif';
-            ctx.fillText('или ползвайте прегледа по-долу', CENTER, CENTER + 18);
+            ctx.fillText('След това настройте с плъзгачите', CENTER, CENTER + 18);
             ctx.restore();
         }
 
@@ -169,7 +354,31 @@
 
         downloadBtn.disabled = !userImage;
         resetBtn.disabled = !userImage;
+        setPhotoControlsEnabled(!!userImage);
     }
+
+    function bindSlider(el, key) {
+        el.addEventListener('input', () => {
+            adj[key] = +el.value;
+            if (key === 'zoom') vZoom.textContent = String(adj.zoom);
+            else if (key === 'posX') vPosX.textContent = String(adj.posX);
+            else if (key === 'posY') vPosY.textContent = String(adj.posY);
+            else if (key === 'stretchX') vStretchX.textContent = String(adj.stretchX);
+            else if (key === 'stretchY') vStretchY.textContent = String(adj.stretchY);
+            render();
+        });
+    }
+    bindSlider(zoomSlider, 'zoom');
+    bindSlider(posXSlider, 'posX');
+    bindSlider(posYSlider, 'posY');
+    bindSlider(stretchXSlider, 'stretchX');
+    bindSlider(stretchYSlider, 'stretchY');
+
+    resetAdjBtn.addEventListener('click', () => {
+        Object.assign(adj, DEFAULT_ADJ);
+        applyAdjToUI();
+        render();
+    });
 
     photoInput.addEventListener('change', function () {
         const f = this.files && this.files[0];
@@ -177,7 +386,12 @@
         const r = new FileReader();
         r.onload = () => {
             const img = new Image();
-            img.onload = () => { userImage = img; render(); };
+            img.onload = () => {
+                userImage = img;
+                Object.assign(adj, DEFAULT_ADJ);
+                applyAdjToUI();
+                render();
+            };
             img.src = r.result;
         };
         r.readAsDataURL(f);
@@ -192,9 +406,12 @@
     resetBtn.addEventListener('click', () => {
         userImage = null;
         photoInput.value = '';
+        Object.assign(adj, DEFAULT_ADJ);
+        applyAdjToUI();
         render();
     });
 
+    applyAdjToUI();
     render();
     </script>
 </body>
